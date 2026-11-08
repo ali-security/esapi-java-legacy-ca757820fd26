@@ -164,4 +164,37 @@ public class HTMLValidationRuleThrowsTest {
         assertFalse(instance.isValidSafeHTML("test5", "Test. <s\r\n\0cript>alert(document.cookie)</script>", 100, false, errors));
         assertTrue( errors.size() == 5 );
     }
+
+    // GHSA-r68h-jhhj-9jvm: Even with Validator.HtmlValidationAction set to "throw",
+    // AntiSamy silently alters some input without reporting any scan error (so
+    // getValidSafeHTML() does not throw). Previously isValidSafeHTML() returned
+    // true for such input even though the original, unsanitized input is not
+    // what AntiSamy approved. It now fails closed unless the sanitized HTML is
+    // exactly equal to the input.
+    @Test
+    public void testIsValidSafeHTMLFailsWhenSilentlyAltered() throws Exception {
+        System.out.println("testIsValidSafeHTMLFailsWhenSilentlyAltered");
+        Validator instance = ESAPI.validator();
+        thrownEx = ExpectedException.none();    // Not expecting any exceptions here.
+
+        String[] payloads = {
+            "<!--[if gte IE 4]>\r\n <SCRIPT>alert('XSS');</SCRIPT>\r\n<![endif]-->",   // IE conditional comment w/ script.
+            "<b>Jeff"                                                                   // Unclosed tag.
+        };
+
+        int testCase = 0;
+        for (String payload : payloads) {
+            String testId = "silentlyAltered-" + testCase++;
+            // No ValidationException here means AntiSamy reported no scan errors, even in "throw" mode...
+            String sanitized = instance.getValidSafeHTML(testId + "-get", payload, 100, false);
+            // ... yet the sanitized output is not the input that the caller would go on to use.
+            assertNotEquals(testId + ": expected sanitizing to alter the payload", payload, sanitized);
+
+            assertFalse(testId + ": payload should not be valid", instance.isValidSafeHTML(testId, payload, 100, false));
+            ValidationErrorList errors = new ValidationErrorList();
+            assertFalse(testId + ": payload should not be valid", instance.isValidSafeHTML(testId, payload, 100, false, errors));
+            assertEquals(1, errors.size());
+            assertEquals(testId + ": Invalid HTML input", errors.getError(testId).getUserMessage());
+        }
+    }
 }

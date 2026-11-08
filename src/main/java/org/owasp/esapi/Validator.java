@@ -170,12 +170,43 @@ public interface Validator {
 	Date getValidDate(String context, String input, DateFormat format, boolean allowNull, ValidationErrorList errorList) throws IntrusionException;
 
 	/**
-	 * Calls getValidSafeHTML and returns true if no exceptions are thrown.
+	 * Returns {@code true} if the parameter {@code input} is valid and <i>presumably</i> safe.
+	 * <p>
+	 * This method <i>fails closed</i>: it returns {@code true} only if the AntiSamy
+	 * scan of {@code input} reports no errors (regardless of the setting of the ESAPI
+	 * property {@code Validator.HtmlValidationAction}) <b>and</b> the sanitized HTML
+	 * (as returned by {@link #getValidSafeHTML(String, String, int, boolean)}) is
+	 * exactly equal to {@code input}. That is, {@code input} must be returned
+	 * completely unaltered by sanitization. Any difference, any AntiSamy scan error,
+	 * or any exception results in {@code false}. See GitHub Security Advisory
+	 * GHSA-r68h-jhhj-9jvm.
+	 * <p>
+	 * Prefer {@link #getValidSafeHTML(String, String, int, boolean)} and use
+	 * <i>its</i> (sanitized) result rather than the original {@code input}.
+	 *
+	 * @return {@code true} only if AntiSamy reports no scan errors for {@code input}
+	 *         and sanitizing {@code input} leaves it exactly unchanged; otherwise {@code false}.
 	 */
 	boolean isValidSafeHTML(String context, String input, int maxLength, boolean allowNull) throws IntrusionException;
 
 	/**
-	 * Calls getValidSafeHTML and returns true if no exceptions are thrown.
+	 * Returns {@code true} if the parameter {@code input} is valid and <i>presumably</i> safe.
+	 * Any exceptions are added to the supplied {@code errorList} parameter.
+	 * <p>
+	 * This method <i>fails closed</i>: it returns {@code true} only if the AntiSamy
+	 * scan of {@code input} reports no errors (regardless of the setting of the ESAPI
+	 * property {@code Validator.HtmlValidationAction}) <b>and</b> the sanitized HTML
+	 * (as returned by {@link #getValidSafeHTML(String, String, int, boolean)}) is
+	 * exactly equal to {@code input}. Any difference, any AntiSamy scan error, or any
+	 * other validation failure results in {@code false} and the corresponding
+	 * {@code ValidationException} being added to {@code errorList}. See GitHub
+	 * Security Advisory GHSA-r68h-jhhj-9jvm.
+	 * <p>
+	 * Prefer {@link #getValidSafeHTML(String, String, int, boolean, ValidationErrorList)}
+	 * and use <i>its</i> (sanitized) result rather than the original {@code input}.
+	 *
+	 * @return {@code true} only if AntiSamy reports no scan errors for {@code input}
+	 *         and sanitizing {@code input} leaves it exactly unchanged; otherwise {@code false}.
 	 */
 	boolean isValidSafeHTML(String context, String input, int maxLength, boolean allowNull, ValidationErrorList errorList) throws IntrusionException;
 

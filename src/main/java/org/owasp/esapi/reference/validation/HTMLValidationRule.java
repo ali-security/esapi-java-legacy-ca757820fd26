@@ -186,10 +186,16 @@ public class HTMLValidationRule extends StringValidationRule {
      * means to revert to legacy behavior. A value of "throw" means to use the new
      * behavior as implemented in GitHub issue 509.
      *
+     * Subclasses may override this to return {@code false} so that any AntiSamy
+     * scan errors always result in a {@code ValidationException}, regardless of
+     * the "Validator.HtmlValidationAction" property. (ESAPI's own
+     * {@code DefaultValidator.isValidSafeHTML} implementation does this so that it
+     * fails closed; see GitHub Security Advisory GHSA-r68h-jhhj-9jvm.)
+     *
      * @return false - If  "Validator.HtmlValidationAction" is set to "throw". Otherwise {@code true}.
      * @since 2.2.1.0
      */
-    private boolean legacyHtmlValidation() {
+    protected boolean legacyHtmlValidation() {
         boolean legacy = true;          // Make legacy support the default behavior for backward compatibility.
         String propValue = "clean";     // For legacy support.
         try {
